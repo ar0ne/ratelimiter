@@ -27,13 +27,13 @@ def cpu_bounded_operation(n: int) -> int:
 @rate_limit()
 def critical(request):
     """Do something critical here"""
-    result = cpu_bounded_operation(random.randrange(50))
+    result = cpu_bounded_operation(random.randrange(10))
     return {"result": result}
 
 @api.post("/important", response={200: DummyResult})
 def important(request):
     """Do something important here"""
-    result = cpu_bounded_operation(random.randrange(25))
+    result = cpu_bounded_operation(random.randrange(10))
     return {"result": result}
 
 @api.get("/normal", response={200: DummyResult})

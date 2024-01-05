@@ -1,0 +1,1 @@
+uvicorn config.asgi:application --workers 10 --log-level debug --limit-concurrency 20
