@@ -3,7 +3,7 @@ import redis
 import time
 import math
 import functools
-from typing import Tuple
+from typing import Tuple, Callable, List
 from ratelimiter.exceptions import RateLimitExceededError
 from django.http.response import HttpResponse
 from redis.exceptions import WatchError
@@ -16,15 +16,22 @@ REPLENISH_RATE = 5
 # How much bursting do you want to allow?
 CAPACITY = 5 * REPLENISH_RATE
 
+
 log = logging.getLogger(__name__)
 
 
-def get_key(request) -> str:
-    # get IP? user ID ?
-    return "key"
-
-
 r = redis.Redis(host="127.0.0.1", port=6379, db=0)
+
+
+class RateLimiter:
+    """Rate limiter"""
+
+    def __init__(self) -> None:
+        pass
+
+
+
+rate_limiter = RateLimiter()
 
 
 def request_rate_limiter(
@@ -59,7 +66,6 @@ def request_rate_limiter(
             pipe.set(token_key, new_tokens, ex=ttl)
             pipe.set(timestamp_key, now, ex=ttl)
             pipe.execute()
-            log.info(f"{last_token=}, {last_refreshed=}, {delta=}, {filled_tokens=}, {new_tokens=}, {now=}")
 
             return allowed, new_tokens
         except WatchError:
@@ -69,27 +75,34 @@ def request_rate_limiter(
             pipe.reset()
 
 
-def exceed_rate_limit(request) -> bool:
+def exceed_rate_limit(key: str) -> Tuple[bool, int]:
     """Check if rate limit exceeded"""
-    key = get_key(request)
-
     token_key, timestamp_key = f"{PREFIX}{key}.tokens", f"{PREFIX}.{key}.timestamp"
-
     try:
         allowed, tokens_left = request_rate_limiter(
             token_key, timestamp_key, REPLENISH_RATE, CAPACITY, int(time.time()), 1
         )
     except redis.exceptions.RedisError as ex:
         log.warning("Redis failed, %s", ex, exc_info=True)
-        return False
-    return not allowed
+        return False, -1
+    return not allowed, tokens_left
 
 
-def with_rate_limit():
+def get_bucket_key(key: str | None, key_builder: Callable | None, request, *args, **kwargs) -> str:
+    """Get bucket key"""
+    if key:
+        return key
+    elif key_builder and callable(key_builder):
+        return key_builder(request, *args, **kwargs)
+    return "global"
+
+
+def with_rate_limit(key: str | None = None, key_builder: Callable | None = None):
     def decorator(f):
         @functools.wraps(f)
         def wrapper(request, *args, **kwargs):
-            throttled = exceed_rate_limit(request)
+            bucket_key = get_bucket_key(key, key_builder, request, *args, **kwargs)
+            throttled, _ = exceed_rate_limit(bucket_key)
             if throttled:
                 raise RateLimitExceededError
             response = f(request, *args, **kwargs)
