@@ -16,7 +16,7 @@ class RedisRateLimiter(RateLimiter):
 
     def __init__(
         self, 
-        conn,
+        conn: redis.Redis,
         config: dict,
         prefix: str | None = None
     ) -> None:
@@ -33,8 +33,7 @@ class RedisRateLimiter(RateLimiter):
         """Checks if request is not exceeded rate limit"""
 
         token_key, timestamp_key = self.get_token_key(key), self.get_timestamp_key(key)
-        limits = self.config.get_limits(key)
-        rate, capacity = limits.get("rate"), limits.get("capacity")
+        rate, capacity = self.config.get_limits(key)
         now = int(time.time())
         requested = 1
 

@@ -1,34 +1,35 @@
-from typing import Dict 
+from typing import Dict, Tuple
 
 from copy import deepcopy
 
 
+Limit = Tuple[int, int]
+
 class RateLimitHelper:
-    _default: Dict[str, Dict[str, int | str]] = {
-        "default": {
-            # How much bursting do you want to allow?
-            "capacity": 500,
-            # How many requests per second do you want a user to be allowed to do?
-            "rate": 100,
-        }
+    """
+    Configure rate limits. Configs contains next data:
+    {
+        "limit_name": (rate: int, capacity: int)
+    }
+    # rate - How many requests per second do you want a user to be allowed to do?
+    # capacity - How much bursting do you want to allow?
+    """
+
+    _default: Dict[str, Dict[str, Limit]] = {
+        "default": (100, 500)
     }
 
     def __init__(self):
         """Init helper"""
         self._limits = {**self._default}
 
-    def add(self, name: str, limit: Dict[str, object]) -> None:
+    def add(self, name: str, limit: Limit) -> None:
         """
         Add a limit to the current config. If the limit already exists, it
         will overwrite it::
 
-            >>> limits.add('default', {
-                    "critical": {
-                        "rate": 100,
-                        "capacity": 500,
-                    }
-                })
-
+            >>> limits.add("anonymous", (1000, 5000))
+            
         :param config: Mapping containing the limits configuration
         """
         self._limits[name] = limit
