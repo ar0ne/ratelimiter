@@ -9,4 +9,4 @@ r = redis.Redis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
 
 limits.set_config(settings.RATE_LIMITS)
 
-rate_limiter = RedisRateLimiter(conn=r, config=limits, prefix="rate_limits")
+rate_limiter = RedisRateLimiter(conn=r, config=limits, prefix=settings.RATE_LIMIT_PREFIX)

@@ -48,6 +48,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "app.middlewares.FooHeaderRateLimiterMiddleware",
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -131,4 +132,6 @@ RATE_LIMITS = os.environ.get("RATE_LIMITS", {
     "critical": (5, 25),
     "critical_anonymous": (1, 5),
     "default": (50, 250),
+    "bar": (10, 30),
 })
+RATE_LIMIT_PREFIX = os.environ.get("RATE_LIMIT_PREFIX", "rate_limits")
