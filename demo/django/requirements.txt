@@ -1,6 +1,5 @@
 Django~=5.0.1
 django-ninja~=1.1.0
-django-ipware~=6.0.3
 uvicorn~=0.25.0
 # fixme: should be -e git..
 -e ../..

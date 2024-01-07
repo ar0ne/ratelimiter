@@ -4,7 +4,7 @@ URL configuration for project.
 from django.contrib import admin
 from django.urls import path
 
-from api.views import api as api_v1
+from .api import api as api_v1
 
 urlpatterns = [
     path('admin/', admin.site.urls),
