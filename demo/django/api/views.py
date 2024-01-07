@@ -24,8 +24,8 @@ Test mode traffic
 r = redis.Redis(host="127.0.0.1", port=6379, db=0)
 
 limits.add("critical", {
-    "capacity": 5,
-    "rate": 25,
+    "capacity": 25,
+    "rate": 5,
 })
 
 rate_limiter = RedisRateLimiter(conn=r, config=limits, prefix="rate_limits")
@@ -38,15 +38,18 @@ def cpu_bound(n: int) -> int:
         i += 1
     return i
 
+def get_ip(request) -> str:
+    return get_client_ip(request)[0]
 
-def get_client_ip_from_request(request, *args, **kwargs):
-    """Get client IP from request"""
-    client_id = get_client_ip(request)
-    return client_id[0]
-
+def get_rate_limit_name_for_critical_request(*args, **kwargs):
+    """Get client IP from request if user is not authenticated"""
+    request = args[0]
+    if not request.user.is_authenticated:
+        return "critical"
+    return get_ip(request)
 
 @api.post("/critical", response={200: DummyResult})
-@with_rate_limit(rate_limiter, key_builder=get_client_ip_from_request)
+@with_rate_limit(rate_limiter, key_builder=get_rate_limit_name_for_critical_request)
 def critical(request):
     """Do something critical here"""
     result = cpu_bound(random.randrange(10))

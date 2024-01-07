@@ -2,23 +2,20 @@ from typing import Dict
 
 from copy import deepcopy
 
-REPLENISH_RATE = 5
-CAPACITY = 5 * REPLENISH_RATE
-
 
 class RateLimitHelper:
-    _config: Dict[str, Dict[str, int | str]] = {
+    _default: Dict[str, Dict[str, int | str]] = {
         "default": {
             # How much bursting do you want to allow?
-            "capacity": CAPACITY,
+            "capacity": 500,
             # How many requests per second do you want a user to be allowed to do?
-            "rate": REPLENISH_RATE,
+            "rate": 100,
         }
     }
 
     def __init__(self):
         """Init helper"""
-        self._limits = {**self._config}
+        self._limits = {**self._default}
 
     def add(self, name: str, limit: Dict[str, object]) -> None:
         """
@@ -34,7 +31,7 @@ class RateLimitHelper:
 
         :param config: Mapping containing the limits configuration
         """
-        self._config[name] = limit
+        self._limits[name] = limit
 
     def get_config(self):
         """

@@ -1,5 +1,6 @@
 import redis
 import math
+import time
 import logging
 
 from typing import Callable, Tuple
@@ -28,17 +29,14 @@ class RedisRateLimiter(RateLimiter):
     def get_timestamp_key(self, key: str) -> str:
         return f"{self.prefix}::{key}::timestamp"
 
-    def request_rate_limiter(
-        self,
-        key: str,
-        now: int,
-        requested: int
-    ) -> Tuple[bool, int]:
+    def request_rate_limiter(self, key: str) -> Tuple[bool, int]:
         """Checks if request is not exceeded rate limit"""
 
         token_key, timestamp_key = self.get_token_key(key), self.get_timestamp_key(key)
         limits = self.config.get_limits(key)
         rate, capacity = limits.get("rate"), limits.get("capacity")
+        now = int(time.time())
+        requested = 1
 
         pipe = self.conn.pipeline()
         while True:
@@ -70,9 +68,10 @@ class RedisRateLimiter(RateLimiter):
             finally:
                 pipe.reset()
 
-    def exceed_rate_limit(self, key: str | None, key_builder: Callable | None, request, *args, **kwargs) -> Tuple[bool, int]:
+    def exceed_rate_limit(self, key: str) -> Tuple[bool, int]:
         try:
-            return super().exceed_rate_limit(key, key_builder, request, *args, **kwargs)
+            return super().exceed_rate_limit(key)
         except redis.exceptions.RedisError as ex:
+            # if redis error occurs, do not block request
             log.warning("Redis failed, %s", ex, exc_info=True)
             return False, -1
