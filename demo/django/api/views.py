@@ -1,12 +1,16 @@
 import time
 import random
+import redis
+
 from ninja import NinjaAPI
 from .schemas import DummyResult
 from asgiref.sync import sync_to_async
 
 from ipware import get_client_ip
 
-from ratelimiter.throttle import with_rate_limit
+from ratelimiter.decorators import with_rate_limit
+from ratelimiter.redis import RedisRateLimiter
+from ratelimiter.configs import limits
 
 api = NinjaAPI()
 
@@ -16,6 +20,16 @@ POSTs
 GETs
 Test mode traffic
 """
+
+r = redis.Redis(host="127.0.0.1", port=6379, db=0)
+
+limits.add("critical", {
+    "capacity": 5,
+    "rate": 25,
+})
+
+rate_limiter = RedisRateLimiter(conn=r, config=limits, prefix="rate_limits")
+
 
 def cpu_bound(n: int) -> int:
     """compute something"""
@@ -32,7 +46,7 @@ def get_client_ip_from_request(request, *args, **kwargs):
 
 
 @api.post("/critical", response={200: DummyResult})
-@with_rate_limit(key_builder=get_client_ip_from_request)
+@with_rate_limit(rate_limiter, key_builder=get_client_ip_from_request)
 def critical(request):
     """Do something critical here"""
     result = cpu_bound(random.randrange(10))
