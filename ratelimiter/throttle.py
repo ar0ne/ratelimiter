@@ -45,11 +45,11 @@ def request_rate_limiter(
             fill_time = capacity / rate
             ttl = math.floor(fill_time * 2)
 
-            last_tokens = int(pipe.get(token_key) or capacity)
+            last_token = int(pipe.get(token_key) or capacity)
             last_refreshed = int(pipe.get(timestamp_key) or 0)
 
             delta = max(0, now - last_refreshed)
-            filled_tokens = min(capacity, last_tokens + delta * rate)
+            filled_tokens = min(capacity, last_token + delta * rate)
             allowed = filled_tokens >= requested
             new_tokens = filled_tokens
             if allowed:
@@ -59,6 +59,7 @@ def request_rate_limiter(
             pipe.set(token_key, new_tokens, ex=ttl)
             pipe.set(timestamp_key, now, ex=ttl)
             pipe.execute()
+            log.info(f"{last_token=}, {last_refreshed=}, {delta=}, {filled_tokens=}, {new_tokens=}, {now=}")
 
             return allowed, new_tokens
         except WatchError:
@@ -84,7 +85,7 @@ def exceed_rate_limit(request) -> bool:
     return not allowed
 
 
-def rate_limit():
+def with_rate_limit():
     def decorator(f):
         @functools.wraps(f)
         def wrapper(request, *args, **kwargs):

@@ -9,7 +9,7 @@ with open("ratelimiter/__init__.py") as f:
             break
 
 setup(
-    name="ratelimiter",
+    name="myratelimiter",
     version=info["version"],
     packages=["ratelimiter"],
     url="https://example.com",

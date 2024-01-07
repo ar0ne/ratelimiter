@@ -1,4 +1,4 @@
 Django~=5.0.1
 django-ninja~=1.1.0
 uvicorn~=0.25.0
-ratelimiter
+-e ../..

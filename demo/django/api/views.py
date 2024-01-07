@@ -4,7 +4,7 @@ from ninja import NinjaAPI
 from .schemas import DummyResult
 from asgiref.sync import sync_to_async
 
-from ratelimiter.throttle import rate_limit
+from ratelimiter.throttle import with_rate_limit
 
 api = NinjaAPI()
 
@@ -24,7 +24,7 @@ def cpu_bounded_operation(n: int) -> int:
 
 
 @api.post("/critical", response={200: DummyResult})
-@rate_limit()
+@with_rate_limit()
 def critical(request):
     """Do something critical here"""
     result = cpu_bounded_operation(random.randrange(10))
