@@ -4,7 +4,7 @@ import time
 import math
 import functools
 from typing import Tuple
-from .exceptions import RateLimitExceeded
+from ratelimiter.exceptions import RateLimitExceededError
 from django.http.response import HttpResponse
 from redis.exceptions import WatchError
 
@@ -90,7 +90,7 @@ def rate_limit():
         def wrapper(request, *args, **kwargs):
             throttled = exceed_rate_limit(request)
             if throttled:
-                raise RateLimitExceeded
+                raise RateLimitExceededError
             response = f(request, *args, **kwargs)
             return response
         return wrapper

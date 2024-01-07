@@ -4,7 +4,7 @@ from ninja import NinjaAPI
 from .schemas import DummyResult
 from asgiref.sync import sync_to_async
 
-from ratelimits.throttle import rate_limit
+from ratelimiter.throttle import rate_limit
 
 api = NinjaAPI()
 
