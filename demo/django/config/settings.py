@@ -124,17 +124,16 @@ STATIC_URL = "static/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-
 REDIS_HOST = os.environ.get("REDIS_HOST", "127.0.0.1")
 REDIS_PORT = os.environ.get("REDIS_PORT", 6379)
 
+# You could add your expected rate and capacity
 RATE_LIMITS = os.environ.get(
     "RATE_LIMITS",
     {
-        "critical": (5, 25),
-        "critical_anonymous": (1, 5),
+        "foo": (10, 50),
+        "not_foo": (1, 5),
         "default": (50, 250),
-        "bar": (10, 30),
     },
 )
 RATE_LIMIT_PREFIX = os.environ.get("RATE_LIMIT_PREFIX", "rate_limits")

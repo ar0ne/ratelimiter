@@ -5,7 +5,7 @@ from ratelimiter.base import RateLimiter
 from ratelimiter.exceptions import RateLimitExceededError
 
 
-def with_rate_limit(
+def ratelimit(
     rate_limiter: RateLimiter,
     key: str | None = None,
     key_builder: Callable | None = None,
@@ -20,8 +20,7 @@ def with_rate_limit(
             if throttled:
                 raise RateLimitExceededError
             response = func(request, *args, **kwargs)
-            # we could set to header amount of requests that are left for the bucket
-            #
+            # here we could add header with amount of requests that are left for the bucket
             return response
 
         return wrapper

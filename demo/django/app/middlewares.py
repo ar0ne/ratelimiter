@@ -11,9 +11,11 @@ def FooHeaderRateLimiterMiddleware(get_response):
     """
 
     def middleware(request):
+        # it could be auth header, User-Agent, URL
         foo_header = request.headers.get("foo")
         if foo_header is not None:
-            throttled, _ = rate_limiter.exceed_rate_limit(foo_header)
+            bucket = "foo" if foo_header == "bar" else "not_foo"
+            throttled, _ = rate_limiter.exceed_rate_limit(bucket, 1)
             if throttled:
                 raise RateLimitExceededError
         return get_response(request)
