@@ -1,8 +1,7 @@
 from ninja import NinjaAPI
+from ratelimiter.exceptions import RateLimitExceededError
 
 from app.api import router as api_router
-
-from ratelimiter.exceptions import RateLimitExceededError
 
 api = NinjaAPI()
 api.add_router("/", api_router)

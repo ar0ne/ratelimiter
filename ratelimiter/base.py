@@ -22,12 +22,12 @@ class RateLimiter:
             return key_builder(*args, **kwargs)
         return self.DEFAULT_KEY
 
-    def request_rate_limiter(self, key: str) -> Tuple[bool, int]:
-        """Request rate limits for key"""
-        return False, 0
+    def exceed_rate_limit(self, key: str, requested: int) -> Tuple[bool, int]:
+        """
+        Check if rate limit exceeded for the key.
 
-    def exceed_rate_limit(self, key: str) -> Tuple[bool, int]:
-        """Check if rate limit exceeded"""
-        allowed, tokens_left = self.request_rate_limiter(key)
-        return not allowed, tokens_left
-
+        :param key: Check rate limits agains the key (e.g. user ID, IP address)
+        :param requested: Indicates amount of new calls.
+        :returns: A combination of was the limit exceeded and how many requests left.
+        """
+        return False, -1

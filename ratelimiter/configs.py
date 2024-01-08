@@ -7,12 +7,12 @@ Limit = Tuple[int, int]
 
 class RateLimitHelper:
     """
-    Configure rate limits. Configs contains next data:
-    {
-        "limit_name": (rate: int, capacity: int)
-    }
-    # rate - How many requests per second do you want a user to be allowed to do?
-    # capacity - How much bursting do you want to allow?
+    Configure rate limits for specified buckets. Each bucket contains next data:
+        limit_bucket: (rate, capacity)
+
+    Where,
+    - rate - How many requests per second do you want a user to be allowed to do?
+    - capacity - How much bursting do you want to allow?
     """
 
     _default: Dict[str, Dict[str, Limit]] = {
@@ -20,7 +20,7 @@ class RateLimitHelper:
     }
 
     def __init__(self):
-        """Init helper"""
+        """Init helper object"""
         self._limits = {**self._default}
 
     def add(self, name: str, limit: Limit) -> None:
@@ -40,13 +40,19 @@ class RateLimitHelper:
         """
         return deepcopy(self._limits)
 
-    def get_limits(self, name: str) -> object:
-        """Get limits by name or default"""
+    def get_limits(self, name: str) -> Limit:
+        """
+        Get limits by name or default.
+        """
         if name in self._limits.keys():
             return self._limits[name]
         return self._limits["default"]
 
-    def set_config(self, config):
+    def set_config(self, config) -> None:
+        """
+        OVerride limit config.
+        Note: new config must contain "default" limits.
+        """
         if "default" not in config:
             raise ValueError("default config must be provided")
         for limit_name in config.keys():

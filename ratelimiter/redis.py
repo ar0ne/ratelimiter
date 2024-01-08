@@ -1,10 +1,10 @@
+"""Redis rate limiter"""
 import redis
 import math
 import time
 import logging
 
-from typing import Callable, Tuple
-from redis.exceptions import WatchError
+from typing import Tuple
 
 from ratelimiter.base import RateLimiter
 
@@ -20,26 +20,46 @@ class RedisRateLimiter(RateLimiter):
         config: dict,
         prefix: str | None = None
     ) -> None:
+        """Init redis rate limiter"""
         super().__init__(config, prefix)
         self.conn = conn
 
-    def get_token_key(self, key: str) -> str:
+    def exceed_rate_limit(self, key: str, requested: int) -> Tuple[bool, int]:
+        """
+        Check if rate limit exceeded for key.
+        """
+        try:
+            return self._request_rate_limiter(key, requested)
+        except redis.exceptions.RedisError as ex:
+            # if redis error occurred, do not block request
+            log.warning("Redis failed, %s", ex, exc_info=True)
+            return False, -1
+
+    def _get_token_key(self, key: str) -> str:
+        """
+        Build token key.
+        """
         return f"{self.prefix}::{key}::token"
 
-    def get_timestamp_key(self, key: str) -> str:
+    def _get_timestamp_key(self, key: str) -> str:
+        """
+        Build timestamp key.
+        """
         return f"{self.prefix}::{key}::timestamp"
 
-    def request_rate_limiter(self, key: str) -> Tuple[bool, int]:
-        """Checks if request is not exceeded rate limit"""
-
-        token_key, timestamp_key = self.get_token_key(key), self.get_timestamp_key(key)
+    def _request_rate_limiter(self, key: str, requested: int) -> Tuple[bool, int]:
+        """
+        This is basic token bucket algorithm that relies on "check-and-set" with "WATCH" command in Redis.
+        Another solution is to use Lua scripts which are atomic.
+        """
+        token_key, timestamp_key = self._get_token_key(key), self._get_timestamp_key(key)
         rate, capacity = self.config.get_limits(key)
         now = int(time.time())
-        requested = 1
 
         pipe = self.conn.pipeline()
         while True:
             try:
+                # before the transaction, read values
                 pipe.watch(token_key, timestamp_key)
 
                 fill_time = capacity / rate
@@ -55,22 +75,17 @@ class RedisRateLimiter(RateLimiter):
                 if allowed:
                     new_tokens = filled_tokens - requested
 
+                # start transcation
                 pipe.multi()
                 pipe.set(token_key, new_tokens, ex=ttl)
                 pipe.set(timestamp_key, now, ex=ttl)
+                # write it all together
                 pipe.execute()
 
-                return allowed, new_tokens
-            except WatchError:
+                return not allowed, new_tokens
+            except redis.exceptions.WatchError:
+                # if value was changed before we "commit" transaction, start again
                 log.info("oups watch error")
                 continue
             finally:
                 pipe.reset()
-
-    def exceed_rate_limit(self, key: str) -> Tuple[bool, int]:
-        try:
-            return super().exceed_rate_limit(key)
-        except redis.exceptions.RedisError as ex:
-            # if redis error occurs, do not block request
-            log.warning("Redis failed, %s", ex, exc_info=True)
-            return False, -1
